@@ -1,0 +1,739 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>L'Étagère Numérique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky top bar, hero with a scrolling strip of book spines, filter toolbar, then a cover grid or a shelf view grouped by category. Detail, basket and reader open as full-height sheets. */
+:root{
+  --bg:#f4f6f1; --fg:#13221a; --muted:#55655b; --line:#d6ddd3; --card:#ffffff;
+  --accent:#0a6a4d; --on-accent:#ffffff; --price:#c98a0a; --price-bg:#fbefcf; --soft:#e6ece4; --glow:rgba(10,106,77,.13); --grid:rgba(19,34,26,.045); --stage1:#dcebdf; --stage2:#f4f6f1; --vig:rgba(10,40,26,.16);
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --body:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1511; --fg:#e8efe9; --muted:#9db0a4; --line:#24342a; --card:#15201a;
+    --accent:#4cc79a; --on-accent:#06251a; --price:#f1bd48; --price-bg:#2b2410; --soft:#1b2a22; --glow:rgba(76,199,154,.14); --grid:rgba(232,239,233,.04); --stage1:#0a2a1f; --stage2:#0d1511; --vig:rgba(0,0,0,.45); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1511; --fg:#e8efe9; --muted:#9db0a4; --line:#24342a; --card:#15201a;
+  --accent:#4cc79a; --on-accent:#06251a; --price:#f1bd48; --price-bg:#2b2410; --soft:#1b2a22; --glow:rgba(76,199,154,.14); --grid:rgba(232,239,233,.04); --stage1:#0a2a1f; --stage2:#0d1511; --vig:rgba(0,0,0,.45); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background-color:var(--bg);background-image:radial-gradient(900px 520px at 88% 420px,var(--glow),transparent 65%),radial-gradient(700px 480px at 4% 1100px,var(--glow),transparent 65%),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:auto,auto,44px 44px,44px 44px;color:var(--fg);font:16px/1.55 var(--body);padding-inline:16px}
+body.lock{overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1180px;margin-inline:auto}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-16px;padding:10px 16px}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font:800 1.15rem/1 var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:10px;min-width:0}
+.brand i{display:inline-flex;gap:2px;align-items:flex-end;height:22px}
+.brand i b{display:block;width:6px;border-radius:1px;background:var(--accent)}
+.brand i b:nth-child(1){height:16px}.brand i b:nth-child(2){height:22px;background:var(--price)}.brand i b:nth-child(3){height:13px}
+.brand span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tools{display:flex;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.seg button{border:0;background:none;padding:6px 12px;font-weight:600;font-size:.85rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.basketbtn{border:1px solid var(--fg);background:var(--fg);color:var(--bg);border-radius:999px;padding:7px 14px;font-weight:600;font-size:.9rem;display:flex;gap:8px;align-items:center}
+.basketbtn b{background:var(--price);color:#1b1404;border-radius:999px;min-width:22px;height:22px;display:inline-grid;place-items:center;font-size:.78rem;padding-inline:6px}
+
+.stage{position:relative;margin-inline:-16px;padding-inline:16px;overflow:hidden;background:linear-gradient(180deg,var(--stage1),var(--stage2));border-bottom:1px solid var(--line)}
+.stage::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 90% at 50% 40%,transparent 55%,var(--vig))}
+#rain{position:absolute;left:0;top:0;z-index:0;display:block}
+.stage .wrap{position:relative;z-index:2}
+.hero{padding-block:44px 0;display:grid;gap:22px}
+.hero h1{font:800 clamp(2rem,6vw,3.6rem)/1.02 var(--display);letter-spacing:-.025em;margin:0;max-width:16ch;text-wrap:balance}
+.hero p{margin:0;color:var(--muted);max-width:56ch;font-size:1.05rem}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin:0;padding:0;list-style:none;font-size:.92rem}
+.facts li{display:flex;gap:8px;align-items:baseline}
+.facts strong{font:800 1.25rem/1 var(--display)}
+.strip{display:flex;align-items:flex-end;gap:3px;overflow-x:auto;padding:16px 4px 0;border-bottom:10px solid var(--fg);scrollbar-width:thin;margin-top:6px}
+.spine{flex:none;border:0;border-radius:3px 3px 1px 1px;writing-mode:vertical-rl;text-orientation:mixed;padding:12px 0;font:700 .78rem/1 var(--display);display:flex;align-items:center;justify-content:space-between;gap:10px;transition:transform .18s ease;position:relative;box-shadow:inset -3px 0 0 rgba(0,0,0,.18)}
+.spine span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-height:100%}
+.spine em{font-style:normal;width:7px;height:7px;border-radius:50%;flex:none}
+.spine:hover,.spine:focus-visible{transform:translateY(-12px)}
+
+.bar{display:grid;gap:12px;padding-block:26px 8px}
+.bar .row1{display:flex;flex-wrap:wrap;gap:10px}
+.field{flex:1 1 240px;min-width:0;position:relative}
+.field input,.field select,.sel{width:100%;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:11px 14px;font:inherit}
+.sel{width:auto;flex:0 1 200px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font-size:.88rem;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.count{color:var(--muted);font-size:.9rem;display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:26px 18px;padding-block:14px 40px}
+.card{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cover{border:0;padding:0;background:none;display:block;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.25),0 10px 22px -10px rgba(0,0,0,.45);transition:transform .2s ease,box-shadow .2s ease;overflow:hidden}
+.cover svg,.cover img{display:block;width:100%;height:auto;aspect-ratio:2/3;object-fit:cover}
+.cover:hover{transform:translateY(-4px) rotate(-.6deg)}
+.meta{display:grid;gap:3px;min-width:0}
+.meta h3{margin:0;font:700 .98rem/1.2 var(--display);text-wrap:balance}
+.meta h3 button{border:0;background:none;padding:0;text-align:left;font:inherit}
+.meta h3 button:hover{text-decoration:underline}
+.au{margin:0;color:var(--muted);font-size:.85rem}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px}
+.price{background:var(--price-bg);color:var(--price);font-weight:700;font-size:.85rem;padding:3px 9px;border-radius:6px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mini{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:30px;font-weight:700;font-size:1.05rem;line-height:1}
+.mini[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+
+.shelf{padding-block:18px 0}
+.shelf h2{font:800 1.3rem/1.1 var(--display);margin:0 0 6px}
+.shelf .board{display:flex;align-items:flex-end;flex-wrap:wrap;gap:3px;padding:20px 6px 0;border-bottom:12px solid var(--fg);border-radius:0 0 3px 3px}
+.shelf .board .spine{margin-bottom:0}
+.shelves{padding-bottom:40px}
+
+.how{border-top:1px solid var(--line);padding-block:34px;display:grid;gap:22px}
+.how h2{font:800 1.6rem/1.1 var(--display);margin:0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:grid;gap:4px;padding-left:46px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font:800 1rem var(--display)}
+.steps b{font-family:var(--display)}
+.steps span{color:var(--muted);font-size:.93rem}
+footer{border-top:1px solid var(--line);padding-block:24px 40px;color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between}
+
+/* sheets */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(5,12,8,.62);display:flex;justify-content:flex-end}
+.sheet{background:var(--bg);width:min(920px,100%);height:100%;overflow-y:auto;padding:max(18px,env(safe-area-inset-top,0px)) 18px max(24px,env(safe-area-inset-bottom,0px));position:relative}
+.sheet.narrow{width:min(520px,100%)}
+.x{position:sticky;top:0;float:right;z-index:2;border:1px solid var(--line);background:var(--card);border-radius:999px;width:38px;height:38px;font-size:1.2rem;line-height:1}
+.dgrid{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:28px;clear:both;padding-top:10px}
+@media(max-width:700px){.dgrid{grid-template-columns:1fr}.dgrid .bigcover{max-width:240px}}
+.bigcover{border-radius:5px;overflow:hidden;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);align-self:start}
+.bigcover svg,.bigcover img{display:block;width:100%;height:auto}.bigcover img,.bl .th img{aspect-ratio:2/3;object-fit:cover}
+.dtxt{display:grid;gap:14px;align-content:start;min-width:0}
+.kicker{font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.dtxt h2{font:800 clamp(1.6rem,4vw,2.3rem)/1.05 var(--display);margin:0;letter-spacing:-.02em;text-wrap:balance}
+.dtxt .au{font-size:1rem}
+.desc{margin:0;max-width:60ch}
+.bigprice{font:800 2rem/1 var(--display);font-variant-numeric:tabular-nums}
+.bigprice small{font:500 .9rem var(--body);color:var(--muted);margin-left:6px}
+.formats{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.formats li{background:var(--soft);border-radius:999px;padding:4px 12px;font-size:.84rem;font-weight:500}
+.eds{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 18px;font-weight:600;text-decoration:none;color:var(--fg);display:inline-flex;align-items:center;gap:8px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.dark{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.btn.sm{padding:8px 12px;font-size:.9rem}
+.note{font-size:.88rem;color:var(--muted);margin:0}
+
+.bl{list-style:none;margin:16px 0;padding:0;display:grid;gap:12px}
+.bl li{display:grid;grid-template-columns:54px minmax(0,1fr) auto;gap:12px;align-items:center}
+.bl .th{border-radius:3px;overflow:hidden}.bl .th svg,.bl .th img{display:block;width:100%;height:auto}
+.bl b{font:700 .95rem/1.2 var(--display)}
+.bl small{display:block;color:var(--muted)}
+.tot{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid var(--fg);padding-top:12px;font:800 1.5rem var(--display)}
+.tot span:last-child{font-variant-numeric:tabular-nums}
+.rm{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:.85rem}
+.empty{color:var(--muted);padding:30px 0}
+.msgbox{width:100%;min-height:110px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:10px;font:inherit;font-size:.9rem;resize:vertical}
+
+.reader .sheet{width:min(780px,100%)}
+.rhead{display:flex;gap:8px;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:20px;position:sticky;top:0;background:var(--bg);z-index:1;padding-top:4px}
+.rhead h2{font:700 1rem/1.2 var(--display);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rhead .x{position:static;float:none;flex:none}
+.rt{display:flex;gap:6px;flex:none}
+.rt button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 10px;font-weight:700}
+.page{font:var(--rs,18px)/1.75 Georgia,'Times New Roman',serif;max-width:62ch;margin-inline:auto}
+.page h3{font:800 1.8rem/1.1 var(--display);margin:0 0 4px}
+.page .by{font:500 .95rem var(--body);color:var(--muted);margin:0 0 22px}
+.page .lock{border:1px dashed var(--line);border-radius:12px;padding:16px;font:500 .95rem/1.5 var(--body);background:var(--card);margin-top:24px;display:grid;gap:10px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="top"><div class="wrap">
+  <div class="brand"><i aria-hidden="true"><b></b><b></b><b></b></i><span>L'Étagère Numérique</span></div>
+  <div class="tools">
+    <div class="seg" role="group" aria-label="Langue / Language">
+      <button type="button" id="lfr" aria-pressed="true">FR</button>
+      <button type="button" id="len" aria-pressed="false">EN</button>
+    </div>
+    <button type="button" class="basketbtn" id="openBasket"><span data-t="basket">Panier</span><b id="bcount">0</b></button>
+  </div>
+</div></div>
+
+<div class="stage"><canvas id="rain" aria-hidden="true"></canvas><div class="wrap">
+  <section class="hero">
+    <h1 data-t="heroH"></h1>
+    <p data-t="heroP"></p>
+    <ul class="facts">
+      <li><strong id="nBooks">100</strong><span data-t="f1"></span></li>
+      <li><strong>FR + EN</strong><span data-t="f2"></span></li>
+      <li><strong>PDF</strong><span data-t="f3"></span></li>
+      <li><strong>1 000–6 500</strong><span data-t="f4"></span></li>
+    </ul>
+    <div class="strip" id="strip" aria-label="Aperçu des livres"></div>
+  </section>
+</div></div>
+
+<main class="wrap">
+
+  <section class="bar" id="catalogue">
+    <div class="row1">
+      <div class="field"><input id="q" type="search" data-tp="search" autocomplete="off"></div>
+      <select class="sel" id="sort" aria-label="Tri"></select>
+      <div class="seg" role="group" aria-label="Vue">
+        <button type="button" id="vgrid" aria-pressed="true" data-t="vGrid"></button>
+        <button type="button" id="vshelf" aria-pressed="false" data-t="vShelf"></button>
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="count"><span id="count"></span><span data-t="hint"></span></div>
+  </section>
+
+  <div id="list"></div>
+
+  <section class="how">
+    <h2 data-t="howH"></h2>
+    <ol class="steps">
+      <li><b data-t="s1t"></b><span data-t="s1d"></span></li>
+      <li><b data-t="s2t"></b><span data-t="s2d"></span></li>
+      <li><b data-t="s3t"></b><span data-t="s3d"></span></li>
+    </ol>
+  </section>
+  <footer>
+    <span>L'Étagère Numérique · <span data-t="foot"></span></span>
+    <a href="https://wa.me/qr/ENUSPCH672VKK1" target="_blank" rel="noopener">WhatsApp</a>
+  </footer>
+</main>
+
+<div class="ov" id="detail" hidden><div class="sheet" role="dialog" aria-modal="true" id="detailSheet"></div></div>
+<div class="ov" id="basketOv" hidden><div class="sheet narrow" role="dialog" aria-modal="true" id="basketSheet"></div></div>
+<div class="ov reader" id="readerOv" hidden><div class="sheet" role="dialog" aria-modal="true" id="readerSheet"></div></div>
+
+<script>
+/* ---------- Configuration ---------- */
+const WAVE = "https://pay.wave.com/m/M_8Yiu-brVsVnT/c/ci/";
+const WA = "https://wa.me/qr/ENUSPCH672VKK1";
+/* Fichiers de chaque livre (à renseigner avec des fichiers dont vous détenez les droits) :
+   FILES[id] = { pdf: "https://lien-du-pdf", fr: "<p>texte HTML</p>", en: "<p>HTML text</p>" } */
+const FILES = {};
+
+/* Vraies couvertures (facultatif) : associez le titre anglais du livre à une image que vous possédez ou dont vous avez les droits.
+   Exemple : COVERS["Atomic Habits"] = "images/atomic-habits.jpg"; (image portrait, ratio 2:3, hébergée avec votre site).
+   Sans image, la couverture dessinée du livre est utilisée automatiquement. */
+const COVERS = {};
+
+const CATS = [
+  {k:"rich", fr:"Richesse & succès", en:"Wealth & success", p:["#0f3d2e","#f3ead2","#e8a317"]},
+  {k:"lead", fr:"Discipline & leadership", en:"Discipline & leadership", p:["#1b2a5c","#f5efe2","#ff7a45"]},
+  {k:"habit", fr:"Habitudes & productivité", en:"Habits & productivity", p:["#a63d2f","#fff4e6","#2a9d8f"]},
+  {k:"mind", fr:"Mental & confiance en soi", en:"Mindset & confidence", p:["#7b2d5b","#fdf1f6","#f9c74f"]},
+  {k:"inner", fr:"Sens, sérénité & psychologie", en:"Meaning, calm & psychology", p:["#2b2d42","#edf2f4","#ef8354"]},
+  {k:"biz", fr:"Business & entrepreneuriat", en:"Business & entrepreneurship", p:["#1d3557","#f1faee","#e63946"]},
+  {k:"power", fr:"Pouvoir & stratégie", en:"Power & strategy", p:["#4a1520","#f1e3d0","#d9a441"]},
+  {k:"rome", fr:"Rome & philosophie", en:"Rome & philosophy", p:["#3b3a36","#efe6d2","#c4613f"]},
+  {k:"fable", fr:"Classiques animaliers", en:"Animal classics", p:["#1f5a6b","#f4f0e4","#f2c14e"]},
+  {k:"afr", fr:"Animaux sauvages & Afrique", en:"Wildlife & Africa", p:["#8a3b12","#fbeed6","#3c7a4a"]},
+  {k:"pets", fr:"Chiens & chats", en:"Dogs & cats", p:["#5b3a73","#f6ecf0","#f2a65a"]},
+  {k:"sci", fr:"Science animale", en:"Animal science", p:["#17402f","#e9f2e4","#7bc47f"]}
+];
+
+/* cat, titre FR, title EN, auteur, prix FCFA, description FR, description EN */
+const RAW = [
+["rich","Réfléchissez et devenez riche","Think and Grow Rich","Napoleon Hill",6500,"Treize principes de réussite autour du désir, de la persévérance et de la pensée dirigée. L'un des livres de développement personnel les plus lus au monde.","Thirteen success principles built around desire, persistence and focused thinking. One of the most widely read self-improvement books in the world."],
+["rich","Les Lois du succès","The Law of Success","Napoleon Hill",4500,"Le vaste cours en seize leçons qui a précédé son best-seller, sur l'état d'esprit, l'initiative et l'action.","The sixteen-lesson course that came before his bestseller, on mindset, initiative and action."],
+["rich","Plus malin que le diable","Outwitting the Devil","Napoleon Hill",3500,"Un dialogue imaginaire sur la peur, la dérive et les habitudes qui freinent les gens dans leur vie.","An imagined conversation about fear, drifting and the habits that hold people back in life."],
+["rich","L'homme le plus riche de Babylone","The Richest Man in Babylon","George S. Clason",4000,"Des paraboles situées dans l'ancienne Babylone sur l'épargne, l'investissement et la discipline financière.","Parables set in ancient Babylon about saving, investing and financial discipline."],
+["rich","Père riche, père pauvre","Rich Dad Poor Dad","Robert Kiyosaki",6000,"Deux figures paternelles opposées pour expliquer actifs, passifs et éducation financière.","Two opposing father figures used to explain assets, liabilities and financial education."],
+["rich","L'autoroute du millionnaire","The Millionaire Fastlane","MJ DeMarco",3500,"Une critique du « plan lent » traditionnel et un argumentaire pour bâtir une entreprise à forte valeur.","A critique of the traditional slow lane and a case for building a high-value business."],
+["rich","La psychologie de l'argent","The Psychology of Money","Morgan Housel",5500,"De courts récits qui montrent que le comportement compte plus que l'intelligence dans les décisions financières.","Short stories showing that behavior matters more than intelligence in money decisions."],
+["rich","L'effet cumulé","The Compound Effect","Darren Hardy",3000,"Comment de petites décisions régulières s'additionnent sur le long terme pour changer une trajectoire.","How small, steady decisions add up over time and change a person's direction."],
+["rich","La magie de voir grand","The Magic of Thinking Big","David J. Schwartz",3500,"Une méthode pour développer la confiance en soi, fixer des objectifs ambitieux et passer à l'action.","A method for building self-confidence, setting ambitious goals and taking action."],
+["rich","Le pouvoir de la pensée positive","The Power of Positive Thinking","Norman Vincent Peale",4500,"Des techniques de foi, d'optimisme et d'image mentale pour affronter les difficultés du quotidien.","Techniques of faith, optimism and mental imagery for facing everyday difficulties."],
+["rich","Comme un homme pense","As a Man Thinketh","James Allen",2500,"Un court essai du début du XXe siècle : les pensées façonnent le caractère et les circonstances.","A short early-twentieth-century essay: thoughts shape character and circumstances."],
+["rich","La science de l'enrichissement","The Science of Getting Rich","Wallace D. Wattles",2500,"Un petit traité sur la pensée créatrice et l'action méthodique appliquées à la réussite financière.","A small treatise on creative thinking and methodical action applied to financial success."],
+["rich","L'art de gagner de l'argent","The Art of Money Getting","P.T. Barnum",1500,"Les conseils d'un célèbre homme de spectacle américain sur l'argent, la réputation et l'honnêteté en affaires.","Advice from a famous American showman on money, reputation and honesty in business."],
+["rich","Les secrets d'un esprit millionnaire","Secrets of the Millionaire Mind","T. Harv Eker",5000,"Part de l'idée que nos croyances intérieures sur l'argent déterminent nos résultats financiers.","Starts from the idea that our inner beliefs about money shape our financial results."],
+["rich","Pensez comme un champion","Think Like a Champion","Donald Trump",2500,"Réflexions d'un homme d'affaires sur la négociation, la persévérance et l'ambition.","Reflections from a businessman on negotiation, perseverance and ambition."],
+["rich","Le pouvoir du moment présent","The Power of Now","Eckhart Tolle",5500,"Un guide de présence et de calme intérieur centré sur l'instant vécu plutôt que sur les soucis.","A guide to presence and inner calm, focused on the present moment rather than worry."],
+["rich","Un rien peut tout changer","Atomic Habits","James Clear",6500,"Une méthode concrète pour construire de bonnes habitudes et en abandonner de mauvaises, par petits gestes répétés.","A practical method for building good habits and dropping bad ones through small repeated actions."],
+["rich","Le pouvoir des habitudes","The Power of Habit","Charles Duhigg",4500,"Explique la boucle signal, routine, récompense et comment la modifier chez soi et en équipe.","Explains the cue, routine, reward loop and how to change it in yourself and in teams."],
+["rich","Deep Work","Deep Work","Cal Newport",3500,"Un plaidoyer pour la concentration profonde, avec des règles pour travailler sans distraction.","A case for deep concentration, with rules for working without distraction."],
+["rich","La semaine de 4 heures","The 4-Hour Workweek","Timothy Ferriss",4500,"Une approche pour automatiser, déléguer et gagner en liberté de temps et de lieu.","An approach to automating, delegating and gaining freedom of time and place."],
+
+["lead","Comment se faire des amis et influencer les autres","How to Win Friends and Influence People","Dale Carnegie",6500,"Des principes simples de relations humaines : écouter, apprécier et convaincre sans heurter.","Simple principles of human relations: listen, appreciate and persuade without friction."],
+["lead","Les 7 habitudes de ceux qui réalisent tout ce qu'ils entreprennent","The 7 Habits of Highly Effective People","Stephen R. Covey",6000,"Sept habitudes pour agir avec efficacité, de la proactivité à l'amélioration continue.","Seven habits for acting effectively, from being proactive to continuous improvement."],
+["lead","Comment arrêter de vous en faire et commencer à vivre","How to Stop Worrying and Start Living","Dale Carnegie",4000,"Des méthodes pratiques pour réduire l'inquiétude, le stress et vivre davantage dans le présent.","Practical methods for reducing worry and stress and living more in the present."],
+["lead","Les 48 lois du pouvoir","The 48 Laws of Power","Robert Greene",5500,"Des études historiques sur la conquête et la conservation du pouvoir, à lire avec esprit critique.","Historical studies on gaining and keeping power, best read with a critical eye."],
+["lead","L'art de la séduction","The Art of Seduction","Robert Greene",3500,"Explore la séduction comme stratégie, à travers l'histoire et la littérature.","Explores seduction as a strategy, through history and literature."],
+["lead","Les lois de la nature humaine","The Laws of Human Nature","Robert Greene",4500,"Une analyse des comportements, des émotions et des motivations pour mieux comprendre les autres.","An analysis of behavior, emotion and motivation to better understand other people."],
+["lead","Maîtriser son destin","Awaken the Giant Within","Tony Robbins",3500,"Un programme de transformation personnelle fondé sur la décision, les croyances et l'action.","A personal transformation program built on decisions, beliefs and action."],
+["lead","Pouvoir illimité","Unlimited Power","Tony Robbins",3500,"Des techniques de performance, de communication et de maîtrise de soi.","Techniques for performance, communication and self-mastery."],
+["lead","Le leader en vous","The Leader in You","Dale Carnegie",2500,"Des principes de leadership et de travail d'équipe inspirés de la tradition Carnegie.","Leadership and teamwork principles drawn from the Carnegie tradition."],
+["lead","Gagner","Winning","Jack Welch",3000,"Des conseils de management sur la culture d'entreprise, le recrutement et la stratégie, par un ancien dirigeant de General Electric.","Management advice on company culture, hiring and strategy from a former General Electric chief."],
+["lead","Osez réussir !","Dare to Succeed","Seth Godin",2000,"Une réflexion sur l'initiative, la création et l'audace de se lancer.","A reflection on initiative, creating and having the nerve to start."],
+["lead","Commencer par pourquoi","Start with Why","Simon Sinek",4500,"Montre pourquoi les organisations qui expriment clairement leur raison d'être inspirent davantage.","Shows why organizations that state their purpose clearly inspire more."],
+["lead","Le pouvoir de la volonté","The Power of Will","Plusieurs éditions / classiques",2500,"Une sélection de textes classiques sur la maîtrise de soi, la discipline et la persévérance.","A selection of classic texts on self-mastery, discipline and perseverance."],
+["lead","L'homme qui voulait être heureux","The Man Who Wanted to Be Happy","Laurent Gounelle",3500,"Un roman initiatique sur la quête du bonheur et la manière de se regarder soi-même.","An initiation novel about the search for happiness and the way we see ourselves."],
+["lead","Le moine qui vendit sa Ferrari","The Monk Who Sold His Ferrari","Robin Sharma",4500,"Une fable où un avocat épuisé cherche équilibre et sens dans une sagesse ancienne.","A fable in which an exhausted lawyer looks for balance and meaning in ancient wisdom."],
+
+["power","Le Prince","The Prince","Nicolas Machiavel",3500,"Un traité du XVIe siècle sur la conquête et l'exercice du pouvoir, resté célèbre pour son réalisme.","A sixteenth-century treatise on gaining and holding power, still famous for its realism."],
+["power","Discours sur la première décade de Tite-Live","Discourses on Livy","Nicolas Machiavel",2000,"Un commentaire de l'histoire romaine de Tite-Live sur les républiques et la liberté politique.","A commentary on Livy's Roman history, dealing with republics and political liberty."],
+["power","De la guerre","On War","Carl von Clausewitz",3000,"Une théorie de la guerre et de la stratégie qui reste une référence militaire et politique.","A theory of war and strategy that remains a military and political reference."],
+["power","L'Art de la guerre","The Art of War","Sun Tzu",3500,"Un traité chinois ancien sur la stratégie, la préparation et la ruse.","An ancient Chinese treatise on strategy, preparation and deception."],
+["power","Le Léviathan","Leviathan","Thomas Hobbes",2500,"Un texte fondateur de la pensée politique moderne sur le contrat social et l'autorité de l'État.","A founding text of modern political thought on the social contract and state authority."],
+["power","Du contrat social","The Social Contract","Jean-Jacques Rousseau",2500,"Une réflexion sur la liberté, la volonté générale et la légitimité politique.","A reflection on liberty, the general will and political legitimacy."],
+["power","De l'esprit des lois","The Spirit of the Laws","Montesquieu",2500,"Une étude comparée des régimes politiques et de la séparation des pouvoirs.","A comparative study of political systems and the separation of powers."],
+["power","La République","The Republic","Platon",3000,"Un dialogue sur la justice, la cité idéale et l'éducation.","A dialogue on justice, the ideal city and education."],
+["power","La Politique","Politics","Aristote",2500,"Une analyse des cités, des constitutions et de la vie commune.","An analysis of city-states, constitutions and communal life."],
+["power","Le Manifeste du parti communiste","The Communist Manifesto","Karl Marx & Friedrich Engels",2000,"Un texte de 1848 sur la lutte des classes et le projet communiste.","An 1848 text on class struggle and the communist program."],
+
+["rome","Méditations","Meditations","Marc Aurèle",4000,"Les notes personnelles d'un empereur romain stoïcien sur la maîtrise de soi et le devoir.","The personal notes of a Stoic Roman emperor on self-control and duty."],
+["rome","Manuel d'Épictète","The Enchiridion","Épictète",2500,"Un bref guide stoïcien : distinguer ce qui dépend de nous de ce qui n'en dépend pas.","A short Stoic guide: telling apart what is up to us from what is not."],
+["rome","De la République","On the Republic","Cicéron",2000,"Un dialogue sur le meilleur régime, la justice et la vie de la cité romaine.","A dialogue on the best form of government, justice and Roman civic life."],
+["rome","La Guerre des Gaules","The Gallic War","Jules César",2500,"Le récit de ses campagnes en Gaule, écrit par César lui-même.","The account of his campaigns in Gaul, written by Caesar himself."],
+["rome","Vie des hommes illustres","Parallel Lives","Plutarque",2500,"Des biographies parallèles de Grecs et de Romains célèbres.","Paired biographies of famous Greeks and Romans."],
+
+["fable","Le Livre de la jungle","The Jungle Book","Rudyard Kipling",3000,"Les aventures de Mowgli, enfant élevé par des loups, entre fable et récit d'initiation.","The adventures of Mowgli, a boy raised by wolves, between fable and coming-of-age tale."],
+["fable","L'Appel de la forêt","The Call of the Wild","Jack London",2500,"Un chien domestique plongé dans la rude ruée vers l'or du Grand Nord.","A pet dog thrown into the harsh gold rush of the far north."],
+["fable","Croc-Blanc","White Fang","Jack London",2500,"Le parcours d'un louveteau sauvage face aux hommes et à la civilisation.","The journey of a wild wolf cub facing humans and civilization."],
+["fable","Le Voyage du Beagle","The Voyage of the Beagle","Charles Darwin",2000,"Le journal de voyage du naturaliste autour du monde, source de ses idées sur l'évolution.","The naturalist's travel journal around the world, the seed of his ideas on evolution."],
+["fable","L'Art d'être heureux chez les animaux","The Art of Being Happy Among Animals","Frans de Waal",2000,"Le regard d'un primatologue sur les émotions et la vie sociale des animaux.","A primatologist's view of animal emotions and social life."],
+["fable","Sommes-nous trop « bêtes » pour comprendre l'intelligence des animaux ?","Are We Smart Enough to Know How Smart Animals Are?","Frans de Waal",3000,"Un état des lieux des recherches sur l'intelligence animale et sur nos préjugés.","A survey of research on animal intelligence and our own biases."],
+["fable","Quand les éléphants pleurent","When Elephants Weep","Jeffrey Masson & Susan McCarthy",2000,"Une enquête sur les émotions des animaux, entre observations et témoignages.","An inquiry into animal emotions, mixing observation and testimony."],
+["fable","L'Âme des animaux","The Soul of Animals","Boris Cyrulnik",2000,"La réflexion d'un neuropsychiatre sur la sensibilité des animaux et leurs liens avec nous.","A neuropsychiatrist's reflection on animal sensitivity and their bonds with us."],
+["fable","Les Fourmis","The Ants","Bernard Werber",3000,"Un roman où le monde des fourmis croise l'aventure et la science-fiction.","A novel where the world of ants meets adventure and science fiction."],
+["fable","La Vie secrète des animaux","The Inner Life of Animals","Peter Wohlleben",3500,"Des observations sur les émotions, l'amitié et le deuil chez les animaux.","Observations on emotion, friendship and grief in animals."],
+["fable","L'Homme qui murmurait à l'oreille des chevaux","The Horse Whisperer","Nicholas Evans",2500,"Un roman sur une jeune fille, son cheval blessé et un dresseur au don particulier.","A novel about a young girl, her injured horse and a trainer with a rare gift."],
+["fable","Marley & Moi","Marley & Me","John Grogan",3000,"Les souvenirs drôles et touchants d'une famille et de son labrador turbulent.","Funny and moving memories of a family and its unruly Labrador."],
+["fable","L'Histoire d'une mouette et du chat qui lui apprit à voler","The Story of a Seagull and the Cat Who Taught Her to Fly","Luis Sepúlveda",3000,"Un conte sur l'amitié, la promesse tenue et l'entraide entre espèces.","A tale of friendship, a promise kept and cooperation across species."],
+["fable","Black Beauty","Black Beauty","Anna Sewell",2000,"Un roman raconté par un cheval, plaidoyer pour le traitement humain des animaux.","A novel told by a horse, a plea for humane treatment of animals."],
+["fable","Belle et Sébastien","Belle and Sébastien","Cécile Aubry",1500,"L'histoire d'un garçon et d'un chien des montagnes dans les Alpes.","The story of a boy and a mountain dog in the Alps."],
+["fable","Deux frères","Two Brothers","Jean-Jacques Annaud",1500,"Le récit de deux jeunes tigres séparés, puis réunis face aux hommes.","The story of two tiger cubs who are separated and later meet again among humans."],
+["fable","La Ferme des animaux","Animal Farm","George Orwell",3500,"Une fable politique où les animaux d'une ferme renversent leur fermier.","A political fable in which the animals of a farm overthrow their farmer."],
+["fable","Le Renard et le Petit Prince","The Fox and the Little Prince","Antoine de Saint-Exupéry",1500,"Une sélection autour de la rencontre et de l'apprivoisement, thèmes du Petit Prince.","A selection around meeting and taming, themes of The Little Prince."],
+["fable","Le Vent dans les saules","The Wind in the Willows","Kenneth Grahame",2000,"Les aventures de Taupe, Rat, Blaireau et Crapaud au fil de la rivière.","The adventures of Mole, Rat, Badger and Toad along the river."],
+["fable","Watership Down","Watership Down","Richard Adams",2500,"Un groupe de lapins quitte sa garenne menacée pour fonder un nouveau foyer.","A group of rabbits leave their threatened warren to found a new home."],
+
+["afr","L'Afrique fantôme","Phantom Africa","Michel Leiris",1500,"Le journal d'une expédition à travers l'Afrique, entre ethnographie et récit personnel.","The journal of an expedition across Africa, between ethnography and personal narrative."],
+["afr","Born Free / Vivre libre","Born Free","Joy Adamson",3000,"L'histoire d'Elsa, lionne orpheline élevée puis rendue à la vie sauvage au Kenya.","The story of Elsa, an orphaned lioness raised and then returned to the wild in Kenya."],
+["afr","La Panthère des neiges","The Snow Leopard","Sylvain Tesson",3000,"Une expédition au Tibet à la recherche d'un félin presque insaisissable.","An expedition in Tibet in search of an almost impossible-to-spot cat."],
+["afr","Le Lion","The Lion","Joseph Kessel",2500,"Un roman au Kenya : une fillette, un lion et un garde-chasse.","A novel set in Kenya: a young girl, a lion and a game warden."],
+["afr","Le Dernier roi d'Afrique","The Last King of Africa","Récits naturalistes",1500,"Une sélection de récits naturalistes sur les grands animaux de la savane.","A selection of nature stories about the great animals of the savanna."],
+["afr","Les Racines du ciel","The Roots of Heaven","Romain Gary",2500,"Un roman sur un homme qui défend les éléphants d'Afrique centrale.","A novel about a man who defends the elephants of Central Africa."],
+["afr","Mémoires d'un éléphant","Memoirs of an Elephant","Récits & documentaires",1500,"Des récits sur la vie, la mémoire et les troupeaux d'éléphants.","Accounts of the life, memory and herds of elephants."],
+["afr","Le Cri de la panthère","The Cry of the Panther","Récits animaliers",1500,"Des récits animaliers de brousse et de forêt.","Animal stories from the bush and the forest."],
+["afr","Le Monde du silence","The Silent World","Jacques-Yves Cousteau & Frédéric Dumas",3000,"Les premiers récits de plongée et d'exploration sous-marine.","The first accounts of diving and underwater exploration."],
+["afr","Le Peuple des océans","The People of the Oceans","Jacques Perrin",1500,"Un voyage dans la vie des océans et de leurs habitants.","A journey through the life of the oceans and their inhabitants."],
+
+["pets","L'Intelligence du chien","The Intelligence of Dogs","Stanley Coren",3000,"Un classement des races et des tests pour mesurer les types d'intelligence du chien.","A ranking of breeds and tests for measuring the kinds of dog intelligence."],
+["pets","Dans la peau d'un chien","Inside of a Dog","Alexandra Horowitz",2500,"Comprendre le monde du chien à travers son odorat et sa perception.","Understanding a dog's world through its sense of smell and perception."],
+["pets","Comment pensent les chiens","How Dogs Think","Stanley Coren",2500,"Une exploration de la mémoire, de l'apprentissage et de la cognition du chien.","An exploration of dog memory, learning and cognition."],
+["pets","Dans la peau d'un chat","Cat Sense","John Bradshaw",2500,"L'origine et le comportement des chats domestiques, et comment mieux vivre avec eux.","The origin and behavior of domestic cats, and how to live with them better."],
+["pets","Le Chat qui venait du ciel","The Guest Cat","Takashi Hiraide",2000,"Un roman délicat sur un couple et le chat voisin qui entre dans leur quotidien.","A delicate novel about a couple and the neighbor's cat who enters their daily life."],
+["pets","Dewey","Dewey","Vicki Myron",2500,"L'histoire vraie d'un chat adopté par une bibliothèque municipale américaine.","The true story of a cat adopted by an American public library."],
+["pets","Un chat dans l'œil","A Cat in the Eye","Récits animaliers",1500,"Des récits animaliers sur le regard des chats.","Animal stories about the gaze of cats."],
+["pets","Mon chien Stupide","My Dog Stupid","John Fante",2000,"Un roman drôle sur un écrivain, sa famille et un énorme chien.","A funny novel about a writer, his family and an enormous dog."],
+["pets","L'Enfant et le chien","The Child and the Dog","Récits animaliers",1500,"Des récits sur l'amitié entre un enfant et son chien.","Stories about the friendship between a child and a dog."],
+["pets","Flush","Flush","Virginia Woolf",2000,"La biographie fantaisiste d'un épagneul, compagnon d'une poétesse.","A playful biography of a spaniel, the companion of a poet."],
+
+["sci","La Vie secrète des arbres","The Hidden Life of Trees","Peter Wohlleben",3500,"Comment les arbres communiquent et s'entraident, vu par un forestier.","How trees communicate and help each other, seen by a forester."],
+["sci","Les Animaux ont-ils une conscience ?","Do Animals Have Consciousness?","Vulgarisation scientifique",2000,"Une synthèse de vulgarisation sur ce que la science sait de la conscience animale.","A popular-science overview of what research knows about animal consciousness."],
+["sci","L'Intelligence des animaux","Animal Intelligence","Frans de Waal",2500,"Des travaux sur la cognition, les outils et la culture chez les animaux.","Work on cognition, tool use and culture in animals."],
+["sci","Le Bonobo, Dieu et nous","The Bonobo and the Atheist","Frans de Waal",3000,"Morale, empathie et origines de la vie sociale chez les primates.","Morality, empathy and the origins of social life among primates."],
+["sci","Primates et philosophes","Primates and Philosophers","Frans de Waal",2500,"Les racines animales de la morale humaine.","The animal roots of human morality."],
+["sci","Les Émotions des animaux","The Emotional Lives of Animals","Marc Bekoff",2500,"Un défenseur de l'idée que les animaux ressentent joie, deuil et empathie.","An advocate for the idea that animals feel joy, grief and empathy."],
+["sci","La Vie des abeilles","The Life of the Bee","Maurice Maeterlinck",2500,"Un essai littéraire sur la ruche, la reine et l'organisation des abeilles.","A literary essay on the hive, the queen and the organization of bees."],
+["sci","La Vie des termites","The Life of the White Ant","Maurice Maeterlinck",2000,"Un essai sur la termitière, le travail collectif et la mort.","An essay on the termite colony, collective work and death."],
+["sci","La Vie des fourmis","The Life of the Ant","Maurice Maeterlinck",2000,"Des observations sur la société des fourmis.","Observations on the society of ants."],
+["sci","L'Origine des espèces","On the Origin of Species","Charles Darwin",3500,"L'ouvrage fondateur sur l'évolution par sélection naturelle.","The founding work on evolution by natural selection."],
+
+/* --- Développement personnel : ajouts --- */
+  ["habit", "Avalez le crapaud !", "Eat That Frog!", "Brian Tracy", 3500, "21 techniques pour cesser de procrastiner : commencer par la tâche la plus difficile et avancer plus vite sur l'essentiel.", "21 techniques to stop procrastinating: start with your hardest task and move faster on what matters most."],
+  ["habit", "S'organiser pour réussir", "Getting Things Done", "David Allen", 4000, "Une méthode pour vider son esprit, classer ses tâches et avancer avec calme sur ses projets.", "A method for emptying your mind, sorting your tasks and moving calmly through your projects."],
+  ["habit", "Miracle Morning", "The Miracle Morning", "Hal Elrod", 4500, "Une routine matinale en six pratiques pour mieux démarrer la journée et progresser chaque jour.", "A morning routine built on six practices to start the day better and make progress every day."],
+  ["habit", "Le Club des 5 heures du matin", "The 5 AM Club", "Robin Sharma", 4500, "Un récit sur la force du lever tôt et d'une heure du matin consacrée à soi : bouger, réfléchir, apprendre.", "A story about the power of rising early and giving the first hour of the day to yourself: move, reflect, learn."],
+  ["habit", "La Magie du rangement", "The Life-Changing Magic of Tidying Up", "Marie Kondo", 3500, "Une méthode japonaise pour ranger par catégories et ne garder que ce qui apporte de la joie.", "A Japanese method for tidying by category and keeping only what brings you joy."],
+  ["habit", "L'Art de la simplicité", "The Art of Simplicity", "Dominique Loreau", 2500, "Un guide pour vivre avec moins, choisir l'essentiel et trouver du calme dans le quotidien.", "A guide to living with less, choosing what is essential and finding calm in daily life."],
+  ["habit", "L'Obstacle est le chemin", "The Obstacle Is the Way", "Ryan Holiday", 4500, "Comment transformer les difficultés en occasions de progresser, avec les leçons du stoïcisme.", "How to turn difficulties into chances to grow, using the lessons of Stoicism."],
+  ["habit", "L'Ego est l'ennemi", "Ego Is the Enemy", "Ryan Holiday", 4000, "Comment l'ego freine à chaque étape, de l'ambition à la réussite puis à l'échec, et comment garder l'humilité.", "How ego holds us back at every stage, from ambition to success to failure, and how to stay humble."],
+  ["habit", "Ikigai", "Ikigai", "Héctor García & Francesc Miralles", 4000, "La raison d'être selon les Japonais et les habitudes d'une vie longue et heureuse à Okinawa.", "The Japanese idea of a reason for being, and the habits of a long, happy life in Okinawa."],
+  ["mind", "L'Art subtil de s'en foutre", "The Subtle Art of Not Giving a F*ck", "Mark Manson", 5000, "Un regard direct sur le bonheur : choisir ce qui compte vraiment et accepter le reste.", "A direct look at happiness: choose what truly matters to you and accept the rest."],
+  ["mind", "12 règles pour une vie", "12 Rules for Life", "Jordan B. Peterson", 5000, "Douze principes pour structurer sa vie, assumer ses responsabilités et mieux affronter le chaos.", "Twelve principles for structuring your life, taking responsibility and facing chaos better."],
+  ["mind", "Pense comme un moine", "Think Like a Monk", "Jay Shetty", 4500, "Un ancien moine partage des pratiques simples pour réduire le stress, gagner en clarté et en but.", "A former monk shares simple practices for less stress, more clarity and a stronger sense of purpose."],
+  ["mind", "Le Pouvoir de votre subconscient", "The Power of Your Subconscious Mind", "Joseph Murphy", 4500, "Comment les pensées profondes influencent nos croyances, nos choix et nos résultats.", "How deep-seated thoughts shape our beliefs, choices and results."],
+  ["mind", "Le Secret", "The Secret", "Rhonda Byrne", 5000, "Un best-seller qui présente la loi de l'attraction : le pouvoir des pensées et des intentions.", "A bestseller presenting the law of attraction: the power of thoughts and intentions."],
+  ["mind", "Les Dons de l'imperfection", "The Gifts of Imperfection", "Brené Brown", 3500, "Vivre avec authenticité, accepter ses failles et dépasser la honte pour s'aimer davantage.", "Living authentically, accepting your flaws and moving past shame to like yourself more."],
+  ["mind", "L'Alchimiste", "The Alchemist", "Paulo Coelho", 4500, "Le conte d'un jeune berger parti chercher son trésor, sur l'écoute de ses rêves et de sa légende personnelle.", "The tale of a young shepherd who sets out to find his treasure, about following your dreams and personal calling."],
+  ["mind", "Les Quatre Accords toltèques", "The Four Agreements", "Don Miguel Ruiz", 4500, "Quatre principes inspirés de la sagesse toltèque pour se libérer des croyances qui limitent.", "Four principles drawn from Toltec wisdom to free yourself from limiting beliefs."],
+  ["mind", "Les Sept Lois spirituelles du succès", "The Seven Spiritual Laws of Success", "Deepak Chopra", 3500, "Sept principes inspirés de la spiritualité pour réussir en restant en harmonie avec soi.", "Seven spiritually inspired principles for succeeding while staying in harmony with yourself."],
+  ["inner", "Découvrir un sens à sa vie", "Man's Search for Meaning", "Viktor E. Frankl", 5000, "Le témoignage d'un survivant des camps et sa logothérapie : trouver un sens même dans l'épreuve.", "A camp survivor's testimony and his logotherapy: finding meaning even in suffering."],
+  ["inner", "L'Intelligence émotionnelle", "Emotional Intelligence", "Daniel Goleman", 4000, "Pourquoi comprendre et gérer ses émotions compte autant que l'intelligence pour réussir.", "Why understanding and managing emotions matters as much as intellect for success."],
+  ["inner", "Système 1 / Système 2", "Thinking, Fast and Slow", "Daniel Kahneman", 5000, "Deux modes de pensée, l'un rapide et intuitif, l'autre lent et réfléchi, et les erreurs de jugement qui en découlent.", "Two ways of thinking, one fast and intuitive, one slow and deliberate, and the judgment errors they cause."],
+  ["inner", "Influence et manipulation", "Influence", "Robert B. Cialdini", 5000, "Les grands principes de la persuasion et comment s'en protéger comme les utiliser avec honnêteté.", "The major principles of persuasion, and how to guard against them or use them honestly."],
+  ["inner", "Qui a piqué mon fromage ?", "Who Moved My Cheese?", "Spencer Johnson", 3000, "Une courte fable sur le changement : deux souris et deux personnages dans un labyrinthe.", "A short fable about change: two mice and two little people in a maze."],
+  ["inner", "Atteindre l'excellence", "Mastery", "Robert Greene", 4500, "Comment progresser vers la maîtrise d'un domaine grâce à l'apprentissage, aux mentors et à la patience.", "How to progress toward mastery of a field through apprenticeship, mentors and patience."],
+  ["inner", "Les 5 langages de l'amour", "The 5 Love Languages", "Gary Chapman", 4000, "Cinq façons d'exprimer et de recevoir l'affection pour mieux se comprendre en couple.", "Five ways of giving and receiving affection to understand each other better as a couple."],
+  ["inner", "Le Guerrier pacifique", "Way of the Peaceful Warrior", "Dan Millman", 3000, "Le récit initiatique d'un jeune sportif et de son mentor sur l'attention, la discipline et la vie présente.", "The coming-of-age story of a young athlete and his mentor, about attention, discipline and living in the present."],
+  ["inner", "Nouvelle Terre", "A New Earth", "Eckhart Tolle", 4000, "Une réflexion sur l'ego et l'éveil de la conscience pour vivre avec plus de paix.", "A reflection on the ego and awakening of awareness to live with more peace."],
+  ["inner", "L'Art du bonheur", "The Art of Happiness", "Dalaï-Lama & Howard C. Cutler", 3500, "Des conversations entre le dalaï-lama et un psychiatre sur la recherche d'un bonheur durable.", "Conversations between the Dalai Lama and a psychiatrist on the search for lasting happiness."],
+  ["inner", "Les hommes viennent de Mars, les femmes de Vénus", "Men Are from Mars, Women Are from Venus", "John Gray", 4000, "Un best-seller sur les différences de communication entre hommes et femmes dans le couple.", "A bestseller on the communication differences between men and women in relationships."],
+  ["rome", "Lettres à Lucilius", "Letters to Lucilius", "Sénèque", 2500, "Des lettres de conseils stoïciens sur le temps, l'amitié, la mort et la façon de bien vivre.", "Letters of Stoic advice on time, friendship, death and how to live well."],
+  ["rome", "De la brièveté de la vie", "On the Shortness of Life", "Sénèque", 2000, "Un court essai : la vie est assez longue pour qui sait bien employer son temps.", "A short essay: life is long enough for those who know how to use their time."],
+  ["rich", "L'Investisseur intelligent", "The Intelligent Investor", "Benjamin Graham", 4500, "Le livre de référence sur l'investissement de valeur, la marge de sécurité et la discipline face au marché.", "The classic on value investing, margin of safety and discipline in the face of the market."],
+  ["lead", "Les 21 lois irréfutables du leadership", "The 21 Irrefutable Laws of Leadership", "John C. Maxwell", 3500, "Des lois simples pour comprendre le leadership par l'influence et développer le sien.", "Simple laws for understanding leadership as influence and developing your own."],
+  ["power", "Le Livre des cinq anneaux", "The Book of Five Rings", "Miyamoto Musashi", 2500, "Le traité d'un maître sabreur japonais sur la stratégie, la discipline et la maîtrise de soi.", "A Japanese sword master's treatise on strategy, discipline and self-mastery."],
+
+/* --- Lot 2 : ajouts --- */
+  ["biz", "De zéro à un", "Zero to One", "Peter Thiel", 4000, "Comment bâtir une entreprise qui crée du neuf plutôt que copier l'existant.", "How to build a company that creates something new instead of copying what exists."],
+  ["biz", "Lean Startup", "The Lean Startup", "Eric Ries", 4000, "Lancer vite, tester auprès des clients et corriger le tir pour réduire les risques.", "Launch fast, test with customers and adjust course to cut risk."],
+  ["biz", "Le Cygne noir", "The Black Swan", "Nassim Nicholas Taleb", 4500, "L'impact des événements rares et imprévisibles, et notre difficulté à les anticiper.", "The impact of rare, unpredictable events and our trouble anticipating them."],
+  ["biz", "Antifragile", "Antifragile", "Nassim Nicholas Taleb", 4500, "Comment tirer profit du désordre et devenir plus fort grâce aux chocs.", "How to gain from disorder and grow stronger through shocks."],
+  ["biz", "Le Hasard sauvage", "Fooled by Randomness", "Nassim Nicholas Taleb", 3500, "Le rôle de la chance dans la réussite et nos erreurs d'interprétation.", "The role of luck in success and our mistakes in interpreting it."],
+  ["biz", "Stratégie Océan Bleu", "Blue Ocean Strategy", "W. Chan Kim & Renée Mauborgne", 4000, "Créer un marché neuf plutôt que se battre dans un secteur saturé.", "Create a new market instead of fighting in a crowded industry."],
+  ["biz", "Le Dilemme de l'innovateur", "The Innovator's Dilemma", "Clayton M. Christensen", 3500, "Pourquoi de grandes entreprises bien gérées se font dépasser par de nouvelles technologies.", "Why well-run big companies get overtaken by new technologies."],
+  ["biz", "Business Model Nouvelle Génération", "Business Model Generation", "Alexander Osterwalder & Yves Pigneur", 4000, "Un guide visuel pour concevoir et repenser le modèle économique d'une entreprise.", "A visual guide to designing and rethinking a company's business model."],
+  ["biz", "Comment réussir une négociation", "Getting to Yes", "Roger Fisher & William Ury", 3500, "Une méthode pour négocier sur les intérêts plutôt que sur les positions.", "A method for negotiating on interests rather than positions."],
+  ["biz", "Vendre, c'est humain", "To Sell Is Human", "Daniel H. Pink", 3500, "Pourquoi chacun vend au quotidien et comment convaincre avec sincérité.", "Why everyone sells every day, and how to persuade sincerely."],
+  ["biz", "La Vache pourpre", "Purple Cow", "Seth Godin", 3000, "Se démarquer en proposant un produit remarquable plutôt que banal.", "Stand out by offering a remarkable product instead of an ordinary one."],
+  ["biz", "Le Quadrant du cash-flow", "Rich Dad's Cashflow Quadrant", "Robert Kiyosaki", 4500, "Quatre façons de gagner sa vie, et comment passer de salarié à investisseur.", "Four ways to earn a living, and how to move from employee to investor."],
+  ["lead", "Principes", "Principles", "Ray Dalio", 5000, "Les règles de vie et de travail d'un investisseur, fondées sur la transparence et l'apprentissage.", "An investor's life and work rules, built on transparency and learning."],
+  ["power", "Les 33 stratégies de la guerre", "The 33 Strategies of War", "Robert Greene", 4500, "Des stratégies tirées de l'histoire militaire, appliquées à la vie et au travail.", "Strategies drawn from military history, applied to life and work."],
+  ["power", "Bushido, l'âme du Japon", "Bushido: The Soul of Japan", "Inazo Nitobe", 2500, "Les valeurs des samouraïs : honneur, courage, loyauté et maîtrise de soi.", "The samurai's values: honor, courage, loyalty and self-control."],
+  ["rome", "De la vie heureuse", "On the Happy Life", "Sénèque", 2000, "Un traité stoïcien : le bonheur vient de la vertu et non du plaisir ou des richesses.", "A Stoic treatise: happiness comes from virtue, not from pleasure or wealth."],
+  ["rome", "Éthique à Nicomaque", "Nicomachean Ethics", "Aristote", 3000, "Une réflexion sur le bonheur, les vertus et la manière de bien vivre.", "A reflection on happiness, the virtues and how to live well."],
+  ["rome", "Apologie de Socrate", "Apology of Socrates", "Platon", 2000, "Le discours de Socrate devant ses juges, sur la vérité et le courage de penser.", "Socrates' speech to his judges, on truth and the courage to think."],
+  ["rome", "Ainsi parlait Zarathoustra", "Thus Spoke Zarathustra", "Friedrich Nietzsche", 3000, "Un livre poétique et philosophique sur le dépassement de soi.", "A poetic, philosophical book about overcoming oneself."],
+  ["rome", "Discours de la méthode", "Discourse on the Method", "René Descartes", 2000, "Comment bien conduire sa raison et chercher la vérité par le doute.", "How to guide one's reason well and seek truth through doubt."],
+  ["rome", "De l'amitié", "On Friendship", "Cicéron", 2000, "Un dialogue antique sur la vraie amitié, ses qualités et ses limites.", "An ancient dialogue on true friendship, its qualities and limits."],
+  ["rome", "Le Monde de Sophie", "Sophie's World", "Jostein Gaarder", 3500, "Un roman qui raconte l'histoire de la philosophie à travers les questions d'une jeune fille.", "A novel that tells the history of philosophy through a young girl's questions."],
+  ["inner", "Walden ou la vie dans les bois", "Walden", "Henry David Thoreau", 2500, "Deux ans de vie simple au bord d'un étang, sur l'essentiel et l'indépendance.", "Two years of simple living by a pond, on essentials and independence."],
+  ["inner", "Le Prophète", "The Prophet", "Khalil Gibran", 2500, "De courts poèmes en prose sur l'amour, le travail, la joie et la liberté.", "Short prose poems on love, work, joy and freedom."],
+  ["inner", "L'Art d'aimer", "The Art of Loving", "Erich Fromm", 3000, "L'amour vu comme un art qui s'apprend et demande effort et maturité.", "Love seen as an art that is learned and takes effort and maturity."],
+  ["inner", "Au cœur de la tourmente, la pleine conscience", "Full Catastrophe Living", "Jon Kabat-Zinn", 4000, "Le programme de réduction du stress par la pleine conscience, expliqué pas à pas.", "The mindfulness-based stress reduction program, explained step by step."],
+  ["inner", "Méditer jour après jour", "Meditating Day by Day", "Christophe André", 4000, "Vingt-cinq leçons pour apprendre à méditer et à vivre plus sereinement.", "Twenty-five lessons to learn meditation and live more calmly."],
+  ["inner", "Imparfaits, libres et heureux", "Imperfect, Free and Happy", "Christophe André", 3500, "Des pratiques pour mieux s'accepter et apprendre l'estime de soi.", "Practices for accepting yourself better and building self-esteem."],
+  ["inner", "La Force des discrets", "Quiet", "Susan Cain", 4000, "Le pouvoir des introvertis dans un monde qui valorise l'extraversion.", "The power of introverts in a world that rewards extroversion."],
+  ["inner", "Petit traité de manipulation à l'usage des honnêtes gens", "Little Treatise on Manipulation", "Robert-Vincent Joule & Jean-Léon Beauvois", 3000, "Comment fonctionne la manipulation au quotidien, et comment la reconnaître.", "How everyday manipulation works, and how to recognize it."],
+  ["inner", "Le Chemin le moins fréquenté", "The Road Less Traveled", "M. Scott Peck", 3500, "Une réflexion sur la discipline, l'amour et la croissance personnelle.", "A reflection on discipline, love and personal growth."],
+  ["inner", "La Dernière Leçon", "The Last Lecture", "Randy Pausch", 3000, "Le dernier cours d'un professeur malade sur la réalisation de ses rêves d'enfant.", "A terminally ill professor's final lecture on achieving childhood dreams."],
+  ["inner", "Le Moine et le Philosophe", "The Monk and the Philosopher", "Jean-François Revel & Matthieu Ricard", 3000, "Un dialogue entre un philosophe et son fils devenu moine bouddhiste.", "A conversation between a philosopher and his son, who became a Buddhist monk."],
+  ["inner", "Plaidoyer pour le bonheur", "Happiness: A Guide", "Matthieu Ricard", 4000, "Un moine explique comment cultiver un bonheur durable par l'entraînement de l'esprit.", "A monk explains how to cultivate lasting happiness through mind training."],
+  ["mind", "La Confiance en soi", "Self-Reliance", "Ralph Waldo Emerson", 2000, "Un essai célèbre qui invite à croire en sa propre pensée et à rester soi-même.", "A famous essay urging you to trust your own thinking and stay yourself."],
+  ["mind", "Apprendre l'optimisme", "Learned Optimism", "Martin Seligman", 3500, "Comment un état d'esprit optimiste peut s'apprendre et améliorer la vie.", "How an optimistic mindset can be learned and improve your life."],
+  ["habit", "Pourquoi nous dormons", "Why We Sleep", "Matthew Walker", 4000, "Ce que la science dit du sommeil, de la mémoire, de l'énergie et de la santé.", "What science says about sleep, memory, energy and health."]
+];
+
+const BOOKS = RAW.map((r,i)=>({id:i+1,cat:r[0],fr:r[1],en:r[2],au:r[3],price:r[4],dfr:r[5],den:r[6]}));
+const catOf = k => CATS.find(c=>c.k===k);
+
+/* ---------- Textes de l'interface ---------- */
+const T = {
+ fr:{basket:"Panier",heroH:"Toute une bibliothèque, sur une seule étagère.",heroP:"Choisissez un livre, payez avec Wave, recevez le PDF et lisez-le aussi directement sur le site.",f1:"livres numériques",f2:"chaque livre dans les deux langues",f3:"téléchargeable + lecture en ligne",f4:"FCFA selon l'influence du livre",search:"Titre, auteur…",vGrid:"Couvertures",vShelf:"Étagère",hint:"Touchez un livre pour voir le détail.",all:"Tous",howH:"Comment acheter",s1t:"Payez avec Wave",s1d:"Le montant de votre panier est repris dans le lien de paiement Wave.",s2t:"Envoyez la preuve sur WhatsApp",s2d:"Une capture du paiement et la liste de vos livres suffisent.",s3t:"Recevez et lisez",s3d:"Vous recevez le PDF et l'accès à la lecture en ligne.",foot:"Livres numériques en français et en anglais",books:"livres",sortSel:"Sélection",sortUp:"Prix croissant",sortDown:"Prix décroissant",sortAz:"A–Z",addB:"Ajouter au panier",inB:"Dans le panier",buy:"Acheter avec Wave",read:"Lire en ligne",ask:"Écrire sur WhatsApp",edition:"Édition",pdf:"PDF téléchargeable",online:"Lecture sur le site",desc:"Prix",close:"Fermer",yourBasket:"Votre panier",emptyB:"Votre panier est vide. Ajoutez des livres depuis le catalogue.",total:"Total",remove:"Retirer",pay:"Payer avec Wave",payNote:"Si le montant n'apparaît pas dans Wave, saisissez-le :",msgH:"Message de commande",copy:"Copier le message",copied:"Copié",wa:"Envoyer la preuve sur WhatsApp",hello:"Bonjour, je commande :",paid:"Paiement Wave effectué, montant :",preview:"Aperçu",locked:"Le texte intégral et le PDF vous sont envoyés après paiement. Écrivez-nous sur WhatsApp avec votre preuve de paiement.",pdfBtn:"Télécharger le PDF",none:"Aucun livre ne correspond à votre recherche.",by:"de"},
+ en:{basket:"Basket",heroH:"A whole library on a single shelf.",heroP:"Pick a book, pay with Wave, receive the PDF and read it right on the site too.",f1:"digital books",f2:"every book in both languages",f3:"downloadable + online reading",f4:"FCFA, priced by the book's influence",search:"Title, author…",vGrid:"Covers",vShelf:"Shelf",hint:"Tap a book to see the details.",all:"All",howH:"How to buy",s1t:"Pay with Wave",s1d:"Your basket total is carried into the Wave payment link.",s2t:"Send proof on WhatsApp",s2d:"A screenshot of the payment and your book list is enough.",s3t:"Receive and read",s3d:"You get the PDF and access to online reading.",foot:"Digital books in French and English",books:"books",sortSel:"Featured",sortUp:"Price, low to high",sortDown:"Price, high to low",sortAz:"A–Z",addB:"Add to basket",inB:"In basket",buy:"Buy with Wave",read:"Read online",ask:"Message on WhatsApp",edition:"Edition",pdf:"Downloadable PDF",online:"Reading on the site",desc:"Price",close:"Close",yourBasket:"Your basket",emptyB:"Your basket is empty. Add books from the catalog.",total:"Total",remove:"Remove",pay:"Pay with Wave",payNote:"If the amount does not show up in Wave, enter it:",msgH:"Order message",copy:"Copy message",copied:"Copied",wa:"Send proof on WhatsApp",hello:"Hello, I would like to order:",paid:"Wave payment made, amount:",preview:"Preview",locked:"The full text and the PDF are sent to you after payment. Message us on WhatsApp with your proof of payment.",pdfBtn:"Download the PDF",none:"No book matches your search.",by:"by"}
+};
+
+/* ---------- État ---------- */
+const S = {lang:"fr", cat:"all", q:"", sort:"sel", view:"grid", basket:[], ed:{}, detail:null, reader:null, rs:18, copied:false};
+const $ = id => document.getElementById(id);
+const t = k => T[S.lang][k];
+const edOf = b => S.ed[b.id] || S.lang;
+const titleOf = (b,ed) => (ed||edOf(b))==="fr" ? b.fr : b.en;
+const descOf = (b,ed) => (ed||edOf(b))==="fr" ? b.dfr : b.den;
+const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g," ") + " FCFA";
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0}return h}
+
+/* ---------- Couvertures originales (SVG) ---------- */
+function wrap(text,max){
+  const words=text.split(" "),lines=[];let cur="";
+  for(const w of words){
+    if(!cur){cur=w}else if((cur+" "+w).length<=max){cur+=" "+w}else{lines.push(cur);cur=w}
+  }
+  if(cur)lines.push(cur);
+  return lines.slice(0,6);
+}
+function cover(b,ed){
+  const real=COVERS[b.en]||COVERS[b.id];
+  if(real)return `<img src="${esc(real)}" alt="${esc(titleOf(b,ed))}" loading="lazy" style="display:block;width:100%;aspect-ratio:2/3;object-fit:cover">`;
+  const c=catOf(b.cat),[bg,ink,ac]=c.p,h=hash(b.fr);
+  const title=titleOf(b,ed);
+  const lines=wrap(title,title.length>40?15:13);
+  const maxlen=Math.max(...lines.map(l=>l.length));
+  let size=lines.length<=2?24:lines.length===3?21:lines.length===4?18:15;
+  size=Math.min(size,160/(maxlen*0.57));
+  const lh=size*1.16, y0=176;
+  const tspans=lines.map((l,i)=>`<tspan x="18" y="${(y0+i*lh).toFixed(1)}">${esc(l)}</tspan>`).join("");
+  const m=h%6;let art="";
+  if(m===0)art=`<circle cx="140" cy="72" r="52" fill="${ac}"/><circle cx="140" cy="72" r="30" fill="${bg}"/>`;
+  else if(m===1)art=[0,1,2,3,4,5].map(i=>`<rect x="0" y="${30+i*20}" width="${200-i*26}" height="9" fill="${ac}" opacity="${(1-i*0.13).toFixed(2)}"/>`).join("");
+  else if(m===2)art=Array.from({length:9},(_,i)=>`<path d="M${-40+i*34} 150L${40+i*34} 0" stroke="${ac}" stroke-width="7" opacity="${i%2?0.45:0.95}"/>`).join("");
+  else if(m===3)art=[60,46,32,18].map((r,i)=>`<path d="M${100-r} 140A${r} ${r} 0 0 1 ${100+r} 140" fill="none" stroke="${i%2?ink:ac}" stroke-width="7" opacity="${i%2?0.55:1}"/>`).join("")+`<rect x="0" y="140" width="200" height="4" fill="${ac}"/>`;
+  else if(m===4){let d="";for(let r=0;r<6;r++)for(let q=0;q<9;q++)d+=`<circle cx="${20+q*20}" cy="${22+r*20}" r="${(q+r)%3===0?5.5:2.6}" fill="${ac}" opacity="${(q+r)%3===0?1:.6}"/>`;art=d}
+  else art=`<path d="M0 150L56 62L92 112L132 38L200 150Z" fill="${ac}"/><path d="M0 150L56 62L92 112L0 150Z" fill="${ink}" opacity=".22"/><circle cx="160" cy="26" r="11" fill="${ink}" opacity=".85"/>`;
+  const au=esc(b.au.length>34?b.au.slice(0,33)+"…":b.au).toUpperCase();
+  return `<svg data-book-id="${b.id}" viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(title)}"><rect width="200" height="300" fill="${bg}"/>${art}<rect x="0" y="0" width="7" height="300" fill="#000" opacity=".16"/><text font-family="'Bricolage Grotesque','Trebuchet MS',sans-serif" font-weight="800" font-size="${size.toFixed(1)}" fill="${ink}">${tspans}</text><text x="18" y="283" font-family="'Instrument Sans',sans-serif" font-weight="600" font-size="8.6" letter-spacing="1.1" fill="${ac}">${au}</text></svg>`;
+}
+function spine(b){
+  const c=catOf(b.cat),[bg,ink,ac]=c.p,h=hash(b.fr);
+  const w=30+(h%5)*4, ht=150+(h>>3)%60;
+  return `<button type="button" class="spine" data-open="${b.id}" title="${esc(titleOf(b))}" style="width:${w}px;height:${ht}px;background:${bg};color:${ink}"><em style="background:${ac}"></em><span>${esc(titleOf(b))}</span></button>`;
+}
+
+/* ---------- Rendu ---------- */
+function applyText(){
+  document.documentElement.lang=S.lang;
+  document.querySelectorAll("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));
+  document.querySelectorAll("[data-tp]").forEach(e=>e.placeholder=t(e.dataset.tp));
+  $("lfr").setAttribute("aria-pressed",S.lang==="fr");
+  $("len").setAttribute("aria-pressed",S.lang==="en");
+  $("sort").innerHTML=[["sel","sortSel"],["up","sortUp"],["down","sortDown"],["az","sortAz"]].map(([v,k])=>`<option value="${v}"${S.sort===v?" selected":""}>${t(k)}</option>`).join("");
+  $("chips").innerHTML=`<button type="button" class="chip" data-cat="all" aria-pressed="${S.cat==="all"}">${t("all")}</button>`+CATS.map(c=>`<button type="button" class="chip" data-cat="${c.k}" aria-pressed="${S.cat===c.k}">${c[S.lang]}</button>`).join("");
+  $("vgrid").setAttribute("aria-pressed",S.view==="grid");
+  $("vshelf").setAttribute("aria-pressed",S.view==="shelf");
+  $("nBooks").textContent=BOOKS.length;
+  $("strip").innerHTML=BOOKS.filter(b=>b.price>=3000).map(spine).join("");
+}
+function filtered(){
+  let l=BOOKS.filter(b=>(S.cat==="all"||b.cat===S.cat)&&(!S.q||norm(b.fr+" "+b.en+" "+b.au).includes(norm(S.q))));
+  if(S.sort==="up")l=[...l].sort((a,b)=>a.price-b.price);
+  if(S.sort==="down")l=[...l].sort((a,b)=>b.price-a.price);
+  if(S.sort==="az")l=[...l].sort((a,b)=>titleOf(a).localeCompare(titleOf(b),S.lang));
+  return l;
+}
+function card(b){
+  const inB=S.basket.includes(b.id);
+  return `<article class="card"><button type="button" class="cover" data-open="${b.id}" aria-label="${esc(titleOf(b))}">${cover(b)}</button><div class="meta"><h3><button type="button" data-open="${b.id}">${esc(titleOf(b))}</button></h3><p class="au">${esc(b.au)}</p><div class="prow"><span class="price">${fmt(b.price)}</span><button type="button" class="mini" data-add="${b.id}" aria-pressed="${inB}" aria-label="${inB?t("inB"):t("addB")}">${inB?"✓":"+"}</button></div></div></article>`;
+}
+function renderList(){
+  const l=filtered();
+  $("count").textContent=l.length+" "+t("books");
+  if(!l.length){$("list").innerHTML=`<p class="empty">${t("none")}</p>`;return}
+  if(S.view==="grid"){$("list").innerHTML=`<div class="grid">${l.map(card).join("")}</div>`;return}
+  const groups=CATS.map(c=>({c,items:l.filter(b=>b.cat===c.k)})).filter(g=>g.items.length);
+  $("list").innerHTML=`<div class="shelves">`+groups.map(g=>`<section class="shelf"><h2>${g.c[S.lang]}</h2><div class="board">${g.items.map(spine).join("")}</div></section>`).join("")+`</div>`;
+}
+/* Couvertures réelles : recherche automatique dans Open Library (titre + auteur), avec repli sur la couverture dessinée.
+   Les résultats sont gardés dans le navigateur pour ne pas refaire les requêtes à chaque visite. */
+const COVER_CACHE = (()=>{try{return JSON.parse(localStorage.getItem("ol_covers_v2")||"{}")}catch(e){return {}}})();
+const COVER_PENDING = {}, COVER_QUEUE = [];
+let COVER_BUSY = 0;
+const GENERIC_AUTHOR = /récits|vulgarisation|plusieurs|classiques|documentaires/i;
+function saveCovers(){try{localStorage.setItem("ol_covers_v2",JSON.stringify(COVER_CACHE))}catch(e){}}
+async function olSearch(params){
+  const r=await fetch("https://openlibrary.org/search.json?"+new URLSearchParams({...params,limit:"8",fields:"title,cover_i"}));
+  if(!r.ok)throw new Error("http "+r.status);
+  return (await r.json()).docs||[];
+}
+async function findCover(b){
+  if(GENERIC_AUTHOR.test(b.au))return 0;
+  const nt=norm(b.en), first=b.au.split(/ & |,/)[0].trim();
+  let hit=(await olSearch({title:b.en,author:first})).find(d=>d.cover_i&&norm(d.title||"")&&(norm(d.title).includes(nt)||nt.includes(norm(d.title))));
+  if(!hit)hit=(await olSearch({title:b.en})).find(d=>d.cover_i&&norm(d.title||"")===nt);
+  return hit?`https://covers.openlibrary.org/b/id/${hit.cover_i}-L.jpg?default=false`:0;
+}
+function applyCover(id){
+  const url=COVER_CACHE[id]; if(!url)return;
+  document.querySelectorAll(`svg[data-book-id="${id}"]`).forEach(svg=>{
+    const img=document.createElement("img");
+    img.src=url; img.alt=svg.getAttribute("aria-label")||"Couverture du livre";
+    img.loading="lazy"; img.referrerPolicy="no-referrer";
+    img.onerror=()=>{COVER_CACHE[id]=0;saveCovers();img.replaceWith(svg)};
+    svg.replaceWith(img);
+  });
+}
+function pumpCovers(){
+  while(COVER_BUSY<4&&COVER_QUEUE.length){
+    const b=COVER_QUEUE.shift(); COVER_BUSY++;
+    findCover(b).then(u=>{COVER_CACHE[b.id]=u;saveCovers()},()=>{}).finally(()=>{COVER_BUSY--;applyCover(b.id);pumpCovers()});
+  }
+}
+function loadRealCovers(){
+  const ids=[...new Set([...document.querySelectorAll("svg[data-book-id]")].map(n=>+n.dataset.bookId).filter(Boolean))];
+  ids.forEach(id=>{
+    if(id in COVER_CACHE){applyCover(id);return}
+    if(COVER_PENDING[id])return;
+    COVER_PENDING[id]=1;
+    const b=BOOKS.find(x=>x.id===id); if(b)COVER_QUEUE.push(b);
+  });
+  pumpCovers();
+}
+function renderBadge(){$("bcount").textContent=S.basket.length}
+
+function orderText(items,ed){
+  const lines=items.map(b=>`• ${titleOf(b,ed||edOf(b))} (${(ed||edOf(b)).toUpperCase()}) – ${fmt(b.price)}`).join("\n");
+  const total=items.reduce((s,b)=>s+b.price,0);
+  return `${t("hello")}\n${lines}\n${t("paid")} ${fmt(total)}`;
+}
+function waveUrl(total){return WAVE+"?amount="+total}
+
+function renderDetail(){
+  const b=BOOKS.find(x=>x.id===S.detail);
+  if(!b){$("detail").hidden=true;return}
+  const ed=edOf(b), inB=S.basket.includes(b.id), c=catOf(b.cat);
+  const msg=encodeURIComponent("");
+  $("detailSheet").innerHTML=`
+   <button type="button" class="x" data-close="detail" aria-label="${t("close")}">×</button>
+   <div class="dgrid">
+    <div class="bigcover">${cover(b,ed)}</div>
+    <div class="dtxt">
+      <div class="kicker">${c[S.lang]}</div>
+      <h2>${esc(titleOf(b,ed))}</h2>
+      <p class="au">${t("by")} ${esc(b.au)}</p>
+      <p class="desc">${esc(descOf(b,ed))}</p>
+      <div class="bigprice">${fmt(b.price)}</div>
+      <div class="eds"><span>${t("edition")}</span>
+        <div class="seg" role="group"><button type="button" data-ed="fr" aria-pressed="${ed==="fr"}">Français</button><button type="button" data-ed="en" aria-pressed="${ed==="en"}">English</button></div></div>
+      <ul class="formats"><li>${t("pdf")}</li><li>${t("online")}</li><li>FR + EN</li></ul>
+      <div class="acts">
+        <a class="btn pri" href="${waveUrl(b.price)}" target="_blank" rel="noopener">${t("buy")}</a>
+        <button type="button" class="btn" data-add="${b.id}">${inB?"✓ "+t("inB"):t("addB")}</button>
+        <button type="button" class="btn" data-read="${b.id}">${t("read")}</button>
+      </div>
+      <p class="note">${t("payNote")} <b>${fmt(b.price)}</b></p>
+      <div class="acts"><a class="btn sm" href="${WA}" target="_blank" rel="noopener">${t("ask")}</a></div>
+    </div>
+   </div>`;
+  $("detail").hidden=false;
+}
+function renderBasket(){
+  const items=S.basket.map(id=>BOOKS.find(b=>b.id===id));
+  const total=items.reduce((s,b)=>s+b.price,0);
+  let inner=`<button type="button" class="x" data-close="basketOv" aria-label="${t("close")}">×</button><h2 style="font:800 1.6rem var(--display);margin:0">${t("yourBasket")}</h2>`;
+  if(!items.length){inner+=`<p class="empty">${t("emptyB")}</p>`}
+  else{
+    inner+=`<ul class="bl">`+items.map(b=>`<li><div class="th">${cover(b)}</div><div><b>${esc(titleOf(b))}</b><small>${esc(b.au)} · ${edOf(b).toUpperCase()}</small><button type="button" class="rm" data-rm="${b.id}">${t("remove")}</button></div><span class="price">${fmt(b.price)}</span></li>`).join("")+`</ul>
+    <div class="tot"><span>${t("total")}</span><span>${fmt(total)}</span></div>
+    <div class="acts" style="margin-top:16px"><a class="btn pri" href="${waveUrl(total)}" target="_blank" rel="noopener">${t("pay")}</a></div>
+    <p class="note" style="margin-top:8px">${t("payNote")} <b>${fmt(total)}</b></p>
+    <h3 style="font:700 1rem var(--display);margin:22px 0 8px">${t("msgH")}</h3>
+    <textarea class="msgbox" id="msgbox" readonly>${esc(orderText(items))}</textarea>
+    <div class="acts" style="margin-top:10px"><button type="button" class="btn" data-copy="1">${S.copied?t("copied")+" ✓":t("copy")}</button><a class="btn dark" href="${WA}" target="_blank" rel="noopener">${t("wa")}</a></div>`;
+  }
+  $("basketSheet").innerHTML=inner;
+}
+function renderReader(){
+  const b=BOOKS.find(x=>x.id===S.reader);
+  if(!b){$("readerOv").hidden=true;return}
+  const ed=edOf(b), f=FILES[b.id]||{}, body=f[ed];
+  $("readerSheet").innerHTML=`<div class="rhead"><h2>${esc(titleOf(b,ed))}</h2><div class="rt"><button type="button" data-rs="-1" aria-label="A−">A−</button><button type="button" data-rs="1" aria-label="A+">A+</button></div><button type="button" class="x" data-close="readerOv" aria-label="${t("close")}">×</button></div>
+  <div class="page" style="--rs:${S.rs}px"><h3>${esc(titleOf(b,ed))}</h3><p class="by">${t("by")} ${esc(b.au)} · ${t("preview")}</p><p>${esc(descOf(b,ed))}</p>
+  ${body?body:""}
+  ${f.pdf?`<p><a class="btn pri" href="${esc(f.pdf)}" target="_blank" rel="noopener">${t("pdfBtn")}</a></p>`:`<div class="lock"><span>${t("locked")}</span><span><a class="btn dark sm" href="${waveUrl(b.price)}" target="_blank" rel="noopener">${t("buy")} · ${fmt(b.price)}</a> <a class="btn sm" href="${WA}" target="_blank" rel="noopener">WhatsApp</a></span></div>`}
+  </div>`;
+  $("readerOv").hidden=false;
+}
+function syncLock(){document.body.classList.toggle("lock",!$("detail").hidden||!$("basketOv").hidden||!$("readerOv").hidden)}
+function refresh(){renderList();renderBadge();if(!$("detail").hidden)renderDetail();if(!$("basketOv").hidden)renderBasket();if(!$("readerOv").hidden)renderReader();syncLock();loadRealCovers()}
+
+/* ---------- Événements ---------- */
+document.addEventListener("click",e=>{
+  const el=e.target.closest("button,a");if(!el)return;
+  const d=el.dataset;
+  if(d.open){S.detail=+d.open;renderDetail();syncLock();loadRealCovers();return}
+  if(d.add){const id=+d.add,i=S.basket.indexOf(id);if(i<0)S.basket.push(id);else S.basket.splice(i,1);S.copied=false;refresh();return}
+  if(d.rm){S.basket=S.basket.filter(x=>x!==+d.rm);refresh();return}
+  if(d.read){S.reader=+d.read;renderReader();syncLock();return}
+  if(d.ed){S.ed[S.detail]=d.ed;renderDetail();renderList();return}
+  if(d.cat){S.cat=d.cat;applyText();renderList();return}
+  if(d.close){
+    if(d.close==="detail"){S.detail=null;$("detail").hidden=true}
+    if(d.close==="basketOv")$("basketOv").hidden=true;
+    if(d.close==="readerOv"){S.reader=null;$("readerOv").hidden=true}
+    syncLock();return;
+  }
+  if(d.rs){S.rs=Math.min(30,Math.max(14,S.rs+(+d.rs)*2));renderReader();return}
+  if(d.copy){
+    const box=$("msgbox"),txt=box.value;
+    const done=()=>{S.copied=true;renderBasket()};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done,()=>{box.select()})}else{box.select()}
+    return;
+  }
+});
+[["detail","detail"],["basketOv","basketOv"],["readerOv","readerOv"]].forEach(([id,k])=>{
+  $(id).addEventListener("click",e=>{if(e.target===$(id)){
+    if(k==="detail")S.detail=null;if(k==="readerOv")S.reader=null;$(id).hidden=true;syncLock();
+  }});
+});
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if(!$("readerOv").hidden){S.reader=null;$("readerOv").hidden=true}
+  else if(!$("basketOv").hidden){$("basketOv").hidden=true}
+  else if(!$("detail").hidden){S.detail=null;$("detail").hidden=true}
+  syncLock();
+});
+$("openBasket").addEventListener("click",()=>{S.copied=false;renderBasket();$("basketOv").hidden=false;syncLock()});
+$("q").addEventListener("input",e=>{S.q=e.target.value.trim();renderList()});
+$("sort").addEventListener("change",e=>{S.sort=e.target.value;renderList()});
+$("vgrid").addEventListener("click",()=>{S.view="grid";applyText();renderList()});
+$("vshelf").addEventListener("click",()=>{S.view="shelf";applyText();renderList()});
+$("lfr").addEventListener("click",()=>{S.lang="fr";S.ed={};applyText();refresh()});
+$("len").addEventListener("click",()=>{S.lang="en";S.ed={};applyText();refresh()});
+
+applyText();renderList();renderBadge();loadRealCovers();
+
+/* ---------- Fond animé : chiffres et signes № qui défilent, façon générique de film ---------- */
+(function(){
+  const cv=$("rain"),st=cv.parentElement,cx=cv.getContext("2d");
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)");
+  const G="0123456789012345678901234567№";
+  const size=15,gap=26;
+  let W=0,H=0,cols=[],c1="#0a6a4d",c2="#c98a0a",run=false,last=0,seen=true,timer=0;
+  const rnd=()=>G[Math.floor(Math.random()*G.length)];
+  function colors(){const s=getComputedStyle(document.documentElement);c1=s.getPropertyValue("--accent").trim()||c1;c2=s.getPropertyValue("--price").trim()||c2}
+  function setup(){
+    const r=st.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);
+    W=r.width;H=r.height;if(!W||!H)return;
+    cv.width=Math.round(W*d);cv.height=Math.round(H*d);cv.style.width=W+"px";cv.style.height=H+"px";cx.setTransform(d,0,0,d,0,0);
+    const rows=Math.ceil(H/size)+4;
+    cols=Array.from({length:Math.ceil(W/gap)},(_,i)=>newCol(i*gap+8,rows,true));
+    colors();draw();
+  }
+  function newCol(x,rows,first){
+    return {x,rows,on:Math.random()<.62,head:first?Math.random()*rows:-Math.random()*24,sp:.07+Math.random()*.2,len:10+Math.floor(Math.random()*16),ch:Array.from({length:rows+4},rnd)};
+  }
+  function step(){
+    for(let i=0;i<cols.length;i++){
+      const c=cols[i];c.head+=c.sp;
+      if(Math.random()<.03){c.ch[Math.floor(Math.random()*c.ch.length)]=rnd()}
+      if(c.head-c.len>c.rows)cols[i]=newCol(c.x,c.rows,false);
+    }
+  }
+  function draw(){
+    cx.clearRect(0,0,W,H);
+    cx.font="500 "+size+"px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+    cx.textBaseline="alphabetic";
+    for(const c of cols){
+      if(!c.on)continue;
+      for(let k=0;k<c.len;k++){
+        const row=Math.floor(c.head)-k;
+        if(row<0||row>=c.ch.length)continue;
+        cx.globalAlpha=Math.pow(1-k/c.len,2)*(k===0?.7:.42);
+        cx.fillStyle=k===0?c2:c1;
+        cx.fillText(c.ch[row],c.x,(row+1)*size);
+      }
+    }
+    cx.globalAlpha=1;
+  }
+  function frame(t){
+    if(!run)return;
+    requestAnimationFrame(frame);
+    if(t-last<34)return;
+    last=t;step();draw();
+  }
+  function sync(){
+    const want=seen&&!document.hidden&&!reduce.matches;
+    if(want&&!run){run=true;requestAnimationFrame(frame)}
+    else if(!want&&run){run=false}
+  }
+  if("ResizeObserver" in window){new ResizeObserver(()=>{clearTimeout(timer);timer=setTimeout(setup,120)}).observe(st)}else{window.addEventListener("resize",setup)}
+  if("IntersectionObserver" in window){new IntersectionObserver(es=>{seen=es[0].isIntersecting;sync()}).observe(st)}
+  document.addEventListener("visibilitychange",sync);
+  reduce.addEventListener&&reduce.addEventListener("change",sync);
+  const dm=matchMedia("(prefers-color-scheme: dark)");
+  dm.addEventListener&&dm.addEventListener("change",()=>{colors();draw()});
+  setup();sync();
+})();
+</script>
+
+</body></html>
